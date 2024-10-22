@@ -1,7 +1,7 @@
 {
-  "name": "typescript-repo-template",
+  "name": "@polymeshassociation/walletconnect-signing-manager",
   "version": "0.0.0",
-  "description": "Template repository for typescript projects",
+  "description": "This library provides a Polymesh SDK-compatible signing manager that enables interaction with a WalletConnect-compatible wallet",
   "types": "dist/index.d.ts",
   "author": "Polymesh Association",
   "license": "ISC",
@@ -14,6 +14,13 @@
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "format": "cross-env prettier-eslint $PWD\"/src/**/*.{ts,tsx,js,jsx,json,css,md}\" --write"
   },
+  "dependencies": {
+    "@polymeshassociation/signing-manager-types": "^3.3.0",
+    "@walletconnect/modal": "^2.6.2",
+    "@walletconnect/sign-client": "2.13.0",
+    "@polkadot/api": "^11.2.1",
+    "@polkadot/extension-dapp": "^0.47.4"
+  },
   "devDependencies": {
     "@commitlint/cli": "17.5.1",
     "@commitlint/config-conventional": "17.4.4",
@@ -24,6 +31,7 @@
     "@types/node": "18.15.11",
     "@typescript-eslint/eslint-plugin": "5.57.0",
     "@typescript-eslint/parser": "5.57.0",
+    "@walletconnect/types": "2.13.0",
     "@zerollup/ts-transform-paths": "1.7.18",
     "cross-env": "7.0.3",
     "eslint": "8.37.0",

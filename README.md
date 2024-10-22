@@ -1,50 +1,141 @@
 [![js-semistandard-style](https://img.shields.io/badge/code%20style-semistandard-brightgreen.svg?style=flat-square)](https://github.com/standard/semistandard)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-# Polymesh Typescript Template Repo
+# WalletConnect Signing Manager
 
-This is a template repository for typescript projects. It includes some initial typescript config and tooling to make our lives easier
+This library provides a Polymesh SDK-compatible signing manager that enables interaction with a WalletConnect-compatible wallet, such as a remote mobile wallet.
 
-**NOTE**: This repo uses `yarn` instead of `npm` for dependencies
+The WalletConnect signing manager is designed to have a similar API to the Browser Extension Signing Manager to simplify the effort for an integration to support both options.
 
-Things included in the repo:
+## Creating a Signing Manager
 
-- Typescript (duh)
-- Absolute imports (allows you to `import { foo } from ~/bar;` instead of `import { foo } from ../../../../bar;`. The default character is `~` but it can be changed in `tsconfig.json`)
-- Eslint to enforce code style rules (extending standard JS with enforced semicolons and typescript-eslint)
-- Prettier to format code on save
-- Semantic release for automatic versioning
-- Commitizen
-- Husky to enforce conventional commits and format the code using prettier before committing
-- Github actions for CI (runs linter, tests, build and semantic-release)
+To use the `WalletConnectSigningManager`, follow these steps:
 
-## Scripts
+### 1. Import the Necessary Modules
 
-- `yarn build:ts` compiles typescript files into javascript and type declarations. Outputs to `dist/` directory
-- `yarn build:docs` builds a documentation page from TSDoc comments in the code. Outputs to `docs/` directory
-- `yarn test` runs tests and outputs the coverage report
-- `yarn commit` runs the commit formatting tool (should replace normal commits)
-- `yarn semantic-release` runs semantic release to calculate version numbers based on the nature of changes since the last version (used in CI pipelines)
-- `yarn lint` runs the linter on all .ts(x) and .js(x) files and outputs all errors
-- `yarn format` runs prettier on all .ts(x) and .js(x) files and formats them according to the project standards
+- Import the `WalletConnectSigningManager` class from the `@polymeshassociation/walletconnect-signing-manager` package.
+- Import the `Polymesh` class from the `@polymeshassociation/polymesh-sdk` package.
 
-## Notes
+```typescript
+import { WalletConnectSigningManager } from '@polymeshassociation/walletconnect-signing-manager';
+import { Polymesh } from '@polymeshassociation/polymesh-sdk';
+```
 
-- All tools are configured via their respective config files instead of adding the config in `package.json`. There is also some vscode project config in `.vscode/settings.json`
-  - eslint: `.eslintrc`
-  - lint-staged: `.lintstagedrc`
-  - prettier: `.prettierrc`
-  - commitlint: `commitlint.config.js`
-  - husky: `.husky`
-  - jest: `jest.config.js`
-  - semantic-release: `release.config.js`
-  - typedoc: `typedoc.json`
-  - github actions: `.github/main.yml`
-- The CI config assumes a `master` branch for stable releases and a `beta` branch for beta releases. Every time something gets pushed to either of those branches (or any time a pull request is opened to any branch), github actions will run. Semantic-release config makes it so that actual releases are only made on pushes to `master` or `beta`
-- The CI config also adds an extra couple of steps to flatten the file structure that actually gets published. This means that your published package will have the built files at the root level instead of inside a `dist` folder. Those steps are:
-  - copy `package.json` into the `dist` folder after building
-  - `cd` into the `dist` folder
-  - install deps into the `dist` folder
-  - run `semantic-release` from there
-- In order for automated NPM releases to actually work, you need to add an NPM auth token as a secret in your repo. To do that, go to your repo's `settings -> secrets -> add a new secret` input `NPM_TOKEN` as the secret name and the token you generated on your NPM account in the text area
-- If you don't need automated NPM releases, you might want to uninstall `semantic-release` and tweak the github actions yaml file to skip the release step
+### 2. Define WalletConnect Configuration
+
+Define the `walletConnectConfiguration` object with the necessary parameters.
+
+Provide details for each configuration parameter:
+
+- `projectId`: Obtain from [WalletConnect](https://cloud.walletconnect.com/).
+- `relayUrl` (optional): Override the default relay endpoint.
+- `metadata` (optional): Metadata displayed in the wallet connecting to your app.
+- `chainIds`: CASA CAIP-2 representation of the chain. Polymesh instances begin with 'polkadot:' + first 32 bytes of the genesis hash. The connected wallet must support the provided chain ID.
+- `optionalChainIds` (optional): Additional chain IDs. Not mandatory for wallet support.
+- `modalOptions` (optional): WalletConnect modal configuration parameters. Refer to [WalletConnect documentation](https://docs.walletconnect.com/advanced/walletconnectmodal/options) for options.
+- `handleConnectUri` (optional): Callback to handle the WalletConnect URI. Runs only once when the URI is generated. If provided, the WalletConnect modal will not be displayed.
+- `onSessionDelete` (optional): Callback function to run when a WalletConnect session is deleted.
+
+```typescript
+const walletConnectConfiguration = {
+  projectId: '427...',
+  relayUrl: 'wss://relay.walletconnect.org',
+  metadata: {
+    name: 'My App',
+    description: 'App for interacting with the Polymesh Blockchain',
+    url: 'https://example.com',
+    icons: ['https://walletconnect.com/walletconnect-logo.png'],
+  },
+  chainIds: ['polkadot:6fbd74e5e1d0a61d52ccfe9d4adaed16'],
+  optionalChainIds: ['polkadot:2ace05e703aa50b48c0ccccfc8b424f7'],
+  modalOptions: {
+    // See WalletConnect documentation for options
+  },
+  handleConnectUri: uri => {
+    // Code to handle the WalletConnect URI.
+    // Note: If provided, the WalletConnect modal will not be displayed.
+  },
+  onSessionDelete: () => {
+    // Code to run on session delete.
+  },
+};
+```
+
+### 3. Create a WalletConnect Connection
+
+- Use the `create()` method of the `WalletConnectSigningManager` class to create a connection.
+- Pass the `walletConnectConfiguration` object and other optional parameters:
+  - `appName`: Name of the dApp attempting to connect to the extension.
+  - `ss58Format` (optional): SS58 prefix for encoding addresses. When the SDK connects to a node this gets set to the chain specific.
+  - `genesisHash` (optional): Genesis hash of the target chain. This is required only when signing raw data to configure the chainId for. When signing transactions prepared by the SDK the chainId will be derived from the genesisHash contained in the transaction payload.
+
+When called, the generated URI or QR code must be used to make the WalletConnect connection before the signing manager is returned.
+
+```typescript
+const signingManager = await WalletConnectSigningManager.create({
+  config: walletConnectConfiguration,
+  appName: 'My App',
+  ss58Format: 12, // (optional)
+  genesisHash: '0x6fbd74e5e1d0a61d52ccfe9d4adaed16dd3a7caa37c6bc4d0c2fa12e8b2f4063', // (optional)
+});
+```
+
+### 4. Attach the Signing Manager to the Polymesh SDK
+
+- Connect the `signingManager` instance to the Polymesh SDK using the `Polymesh.connect()` method.
+
+```typescript
+const polymesh = await Polymesh.connect({
+  nodeUrl,
+  signingManager,
+});
+```
+
+Now you have successfully created a `WalletConnectSigningManager` instance and attached it to the Polymesh SDK, allowing interaction with a WalletConnect-compatible wallet.
+
+## Additional Methods
+
+### Setting SS58 Format and Genesis Hash
+
+Use the `setSs58Format()` method and `setGenesisHash()` method to set the SS58 prefix and genesis hash, respectively.
+
+```typescript
+signingManager.setSs58Format(42);
+signingManager.setGenesisHash('0x123456789abcdef');
+```
+
+### Getting Accounts
+
+To retrieve accounts from the connected wallet, use the `getAccounts()` or `getAccountsWithMeta()` methods.
+
+```typescript
+const accounts = await signingManager.getAccounts();
+const accountsWithMeta = await signingManager.getAccountsWithMeta();
+```
+
+### Getting External Signer
+
+Use the `getExternalSigner()` method to get a `WalletConnectSigner` object that uses connected walletConnect accounts for signing.
+
+```typescript
+const externalSigner = signingManager.getExternalSigner();
+```
+
+### Subscribing to Account Changes
+
+Subscribe to changes in the connected wallet's accounts using the `onAccountChange()` method.
+
+```typescript
+const unsubscribe = signingManager.onAccountChange(accounts => {
+  // Handle account change event
+});
+```
+
+### Disconnecting and Checking Connection Status
+
+Use the `disconnect()` method to disconnect the connected WalletConnect session, and `isConnected()` method to check the connection status.
+
+```typescript
+await signingManager.disconnect();
+const isConnected = signingManager.isConnected();
+```

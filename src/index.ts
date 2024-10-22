@@ -1,2 +1,3 @@
-// Happy Coding!
-console.log('Polymesh Rocks!');
+/* istanbul ignore file */
+
+export { WalletConnectSigningManager } from './lib/walletconnect-signing-manager';
