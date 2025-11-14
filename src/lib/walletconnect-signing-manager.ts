@@ -109,7 +109,7 @@ export class WalletConnectSigningManager implements SigningManager {
   ): UnsubCallback {
     let ss58Format: number;
 
-    return this.walletConnect.subscribeAccounts(accounts => {
+    return this.walletConnect.subscribeAccounts((accounts) => {
       if (!ss58Format) {
         ss58Format = this.getSs58Format('onAccountChange callback');
       }

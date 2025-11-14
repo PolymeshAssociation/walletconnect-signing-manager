@@ -7,6 +7,8 @@ This library provides a Polymesh SDK-compatible signing manager that enables int
 
 The WalletConnect signing manager is designed to have a similar API to the Browser Extension Signing Manager to simplify the effort for an integration to support both options.
 
+**Note:** This library uses Reown AppKit for displaying the QR code modal interface.
+
 ## Creating a Signing Manager
 
 To use the `WalletConnectSigningManager`, follow these steps:
@@ -17,7 +19,11 @@ To use the `WalletConnectSigningManager`, follow these steps:
 - Import the `Polymesh` class from the `@polymeshassociation/polymesh-sdk` package.
 
 ```typescript
-import { WalletConnectSigningManager } from '@polymeshassociation/walletconnect-signing-manager';
+import {
+  WalletConnectSigningManager,
+  POLYMESH_CHAIN_ID,
+  POLYMESH_TESTNET_CHAIN_ID,
+} from '@polymeshassociation/walletconnect-signing-manager';
 import { Polymesh } from '@polymeshassociation/polymesh-sdk';
 ```
 
@@ -27,13 +33,25 @@ Define the `walletConnectConfiguration` object with the necessary parameters.
 
 Provide details for each configuration parameter:
 
-- `projectId`: Obtain from [WalletConnect](https://cloud.walletconnect.com/).
+- `projectId`: Obtain from [WalletConnect Cloud](https://cloud.walletconnect.com/).
 - `relayUrl` (optional): Override the default relay endpoint.
 - `metadata` (optional): Metadata displayed in the wallet connecting to your app.
-- `chainIds`: CASA CAIP-2 representation of the chain. Polymesh instances begin with 'polkadot:' + first 32 bytes of the genesis hash. The connected wallet must support the provided chain ID.
+- `chainIds`: CASA CAIP-2 representation of the chain. Polymesh instances begin with 'polkadot:' + first 32 bytes of the genesis hash. The connected wallet must support the provided chain ID. Use `POLYMESH_CHAIN_ID` for mainnet or `POLYMESH_TESTNET_CHAIN_ID` for testnet (exported constants).
 - `optionalChainIds` (optional): Additional chain IDs. Not mandatory for wallet support.
-- `modalOptions` (optional): WalletConnect modal configuration parameters. Refer to [WalletConnect documentation](https://docs.walletconnect.com/advanced/walletconnectmodal/options) for options.
-- `handleConnectUri` (optional): Callback to handle the WalletConnect URI. Runs only once when the URI is generated. If provided, the WalletConnect modal will not be displayed.
+- `modalOptions` (optional): Reown AppKit modal configuration parameters. Accepts all CreateAppKit options except `projectId`, `networks`, and `metadata` which are set internally. Options include:
+  - `includeWalletIds`: Array of wallet IDs to show (creates an allowlist). By default, Nova Wallet and SubWallet IDs are set for Polymesh compatibility. Override this to show different wallets.
+  - `featuredWalletIds`: Array of wallet IDs to feature at the top of the modal. By default, set to the same wallets as `includeWalletIds`.
+  - `excludeWalletIds`: Array of wallet IDs to hide (creates a blocklist). Ignored if `includeWalletIds` is set.
+  - `features`: Object to control AppKit features (e.g., `{ analytics: false }`)
+  - `themeMode`: Set theme to 'light' or 'dark' (default: 'dark')
+  - `themeVariables`: Custom theme CSS variables object:
+    - `--apkt-accent`: Primary accent color for buttons, icons, labels
+    - `--apkt-color-mix`: Color that blends with default colors
+    - `--apkt-color-mix-strength`: Blend percentage (0-100)
+    - `--apkt-font-family`: Base font family
+    - `--apkt-border-radius-master`: Base border radius
+  - Other AppKit options (see [Reown AppKit documentation](https://docs.reown.com/appkit/react/core/options))
+- `handleConnectUri` (optional): Callback to handle the WalletConnect URI. Runs only once when the URI is generated. If provided, the Reown AppKit modal will not be displayed.
 - `onSessionDelete` (optional): Callback function to run when a WalletConnect session is deleted.
 
 ```typescript
@@ -46,12 +64,12 @@ const walletConnectConfiguration = {
     url: 'https://example.com',
     icons: ['https://walletconnect.com/walletconnect-logo.png'],
   },
-  chainIds: ['polkadot:6fbd74e5e1d0a61d52ccfe9d4adaed16'],
-  optionalChainIds: ['polkadot:2ace05e703aa50b48c0ccccfc8b424f7'],
+  chainIds: [POLYMESH_CHAIN_ID], // or [POLYMESH_TESTNET_CHAIN_ID] for testnet
+  optionalChainIds: [POLYMESH_TESTNET_CHAIN_ID], // Optional: allow testnet as well
   modalOptions: {
     // See WalletConnect documentation for options
   },
-  handleConnectUri: uri => {
+  handleConnectUri: (uri) => {
     // Code to handle the WalletConnect URI.
     // Note: If provided, the WalletConnect modal will not be displayed.
   },
@@ -126,7 +144,7 @@ const externalSigner = signingManager.getExternalSigner();
 Subscribe to changes in the connected wallet's accounts using the `onAccountChange()` method.
 
 ```typescript
-const unsubscribe = signingManager.onAccountChange(accounts => {
+const unsubscribe = signingManager.onAccountChange((accounts) => {
   // Handle account change event
 });
 ```

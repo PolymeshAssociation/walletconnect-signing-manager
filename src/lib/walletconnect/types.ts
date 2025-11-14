@@ -1,5 +1,5 @@
 import type { InjectedAccount } from '@polkadot/extension-inject/types';
-import type { WalletConnectModalConfig } from '@walletconnect/modal';
+import type { CreateAppKit } from '@reown/appkit';
 import type { SignClientTypes } from '@walletconnect/types';
 
 import type { WalletConnectSigner } from './signer';
@@ -17,15 +17,22 @@ export interface WalletOptionsType {
   };
 }
 
-export type WalletConnectModalOptions = Omit<WalletConnectModalConfig, 'projectId' | 'chains'>;
-
+/**
+ * Configuration for WalletConnect integration.
+ * Extends SignClientTypes.Options for proper SignClient initialization.
+ */
 export interface WalletConnectConfiguration extends SignClientTypes.Options {
   projectId: string;
   chainIds?: PolkadotNamespaceChainId[];
   optionalChainIds?: PolkadotNamespaceChainId[];
   onSessionDelete?: () => void;
   handleConnectUri?: (uri: string) => void;
-  modalOptions?: WalletConnectModalOptions;
+  /**
+   * Reown AppKit modal configuration options.
+   * Accepts all CreateAppKit options except projectId, networks, and metadata which are set internally.
+   * @see https://docs.reown.com/appkit/react/core/options
+   */
+  modalOptions?: Partial<Omit<CreateAppKit, 'projectId' | 'networks' | 'metadata'>>;
 }
 
 export interface WalletMetadata {

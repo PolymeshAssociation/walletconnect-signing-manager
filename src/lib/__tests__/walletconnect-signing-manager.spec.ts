@@ -104,6 +104,18 @@ describe('WalletConnectSigningManager Class', () => {
       );
       expect(walletConnectSignerMock.chainId).toBe('polkadot:1234567890abcdef1234567890abcdef');
     });
+
+    it('should set the genesis hash even when signer is undefined', () => {
+      walletConnectMock.signer = undefined;
+      signingManager.setGenesisHash(
+        '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
+      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect((signingManager as any)._genesisHash).toBe(
+        '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
+      );
+      // Should not throw even though signer is undefined (optional chaining)
+    });
   });
 
   describe('method: getAccounts', () => {
