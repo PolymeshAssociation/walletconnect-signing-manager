@@ -47,6 +47,7 @@ jobs:
     name: Building and releasing project
     runs-on: ubuntu-latest
     needs: [lint, test]
+    if: github.event_name == 'push'
     permissions:
       contents: write # push release commits, tags, create GitHub Releases
       issues: write # @semantic-release/github comments on resolved issues
